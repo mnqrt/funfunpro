@@ -1,0 +1,3 @@
+- Buat Pseudorandom Number Generator [BISA DI FUNCTIONALIN]
+- Buat Permutation/Shuffle Generator [Mungkin Bisa di functionalin]
+- Buat API `POST /generate` dan `PATCH /shuffle`
