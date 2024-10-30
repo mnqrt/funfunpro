@@ -14,6 +14,17 @@ const nextXorshift64 = (state: Xorshift64State): Xorshift64State => {
   return b ^ (b << BigInt(17));
 }
 
+const nextMod = (mod: number) => {
+  return (state: RandState): RandState => {
+    const bigMod = BigInt(mod)
+    if (state + bigMod > 52) {
+      const nxt = state % bigMod + BigInt(1)
+      return nxt
+    }
+    return state + bigMod
+  }
+}
+
 const generateRandomList = (
   generator: (state: RandState) => RandState,
   state: RandState,
@@ -34,17 +45,22 @@ const shuffleDeck = (
 ): Card[] => {
   const n = deck.length;
   if (n == 0) return [];
-
   const nextState = rngGen(state);
+  console.log("Now: ", state)
   const el = deck[Number(moduloBy(nextState, n))];
   return [el, ...shuffleDeck(deck.filter(isNotEqual(el)), rngGen, nextState)];
 }
 
 const deck = generateDeck();
 console.log("Deck: ", deck.map(formatCard));
-console.log("Shuffled: ", shuffleDeck(deck, nextXorshift64, deterministicSeed(1)).map(formatCard))
-// Note: can also use getCurrentTime
 
+/* This utilizes Xorshift64 as randomization algorithm */
+console.log("Shuffled: ", shuffleDeck(deck, nextXorshift64, BigInt(getTommorow())).map(formatCard))
+//                                              Note: can also use getCurrentTime()
+
+
+/* This utilizes (+4) mod as "randomization" algorithm */
+console.log("Shuffled Mod 4: ", shuffleDeck(deck, nextMod(4), deterministicSeed(1)).map(formatCard))
 export {
   shuffleDeck,
 }
