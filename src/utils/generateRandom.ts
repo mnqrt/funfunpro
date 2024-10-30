@@ -1,5 +1,7 @@
 import { Card } from "../types/type";
 import { generateDeck, formatCard } from "./convertNumber";
+import { isNotEqual } from "./comparator";
+import { getCurrentTime, getTommorow } from "./getTime";
 
 type RandState = bigint;
 type Xorshift64State = RandState;
@@ -46,18 +48,19 @@ const generateRandomList = (
 
 const moduloBy = (value: bigint, modulus: number): bigint => value % BigInt(modulus)
 
-const shuffleDeck = (deck: Card[]): Card[] => {
+const shuffleDeck = (deck: Card[], state: () => number): Card[] => {
   const n = deck.length;
   if (n == 0) return [];
 
-  const [idx, _] = next(deterministicSeed(Date.now()));
+  const [idx, _] = next(deterministicSeed(state()));
   const el = deck[Number(moduloBy(idx, n))];
-  return [el, ...shuffleDeck(deck.filter((x) => x != el))];
+  return [el, ...shuffleDeck(deck.filter(isNotEqual(el)), state)];
 }
 
 const deck = generateDeck();
-console.log("Deck: ", deck.map(card => formatCard(card)));
-console.log("Shuffled: ", shuffleDeck(deck).map(card => formatCard(card)))
+console.log("Deck: ", deck.map(formatCard));
+console.log("Shuffled: ", shuffleDeck(deck, getTommorow).map(formatCard))
+//                       Note: can also use getCurrentTime
 
 // console.log("Random sequence of 64-bit numbers:", randomSequence.map(n => moduloBy(n, 13).toString()));
 
