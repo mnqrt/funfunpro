@@ -9,11 +9,11 @@ app.get('/', (req, res) => {
 });
 
 app.post('/generate', (req, res) => {
-  res.send(JSON.stringify(generateDeck().map(card => formatCard(card))))
+  res.send(JSON.stringify(generateDeck().map(formatCard)))
 });
 
 app.patch('/shuffle', (req, res) => {
-  res.send(JSON.stringify(shuffleDeck(JSON.parse(req.body).map(card => unformatCard(card)))))
+  res.send(JSON.stringify(shuffleDeck(JSON.parse(req.body).map(unformatCard))))
 });
 
 app.listen(port, () => {
