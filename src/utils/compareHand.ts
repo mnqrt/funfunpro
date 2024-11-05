@@ -2,6 +2,9 @@ import { Card, Hand, Board, Suite, Value } from "../types/type";
 
 type FullHand = Card[];
 
+const getValue = (card: Card): Value => card.value
+const uniqueValues = <T>(arr: T[]): T[] => arr.filter((value, index, self) => self.indexOf(value) === index);
+
 const sortCards = (cards: FullHand): Card[] => {
   return [...cards].sort((a, b) => b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite));
 };
@@ -17,24 +20,39 @@ const suiteRank = (suite: Suite): number => {
 };
 
 const isFlush = (cards: FullHand): boolean => {
+  if (cards.length < 5) {
+    return false
+  }
+
   const firstSuite = cards[0].suite;
   const sameSuite = cards.filter(card => card.suite === firstSuite);
-  return sameSuite.length >= 5;
+  if (sameSuite.length >= 5) {
+    return true
+  }
+
+  return isFlush(cards.slice(1))
 };
 
-const consecutive = (values: Value[], numConsecutive: number): boolean => {
-  if (numConsecutive <= 0) return true;
-  if (values.length < 2) return false;
-  
-  const cur = values[0];
-  const next = values[1];
-  if ((cur - 1) !== next) return consecutive(values.filter(val => val !== cur), numConsecutive);
-  return consecutive(values.filter(val => val !== cur), numConsecutive - 1);
+const consecutiveFactory = (numConsecutive: number) => {
+  return (values: Value[]): boolean => {
+    if (numConsecutive <= 0) {
+      return true
+    }
+    if (values.length < 2) {
+      return false
+    }
+    
+    if (values[0] - 1 === values[1]) {
+      return consecutiveFactory(numConsecutive - 1)(values.slice(1))
+    }
+
+    return consecutiveFactory(4)(values.slice(1))
+  }
 }
 
 const isStraight = (cards: FullHand): boolean => {
-  const sortedValues = cards.map(card => card.value); // cards already sorted beforehand
-  return consecutive(sortedValues, 4);
+  const sortedValues = uniqueValues(cards.map(getValue));
+  return consecutiveFactory(4)(sortedValues);
 };
 
 const getValueCounts = (cards: FullHand): Record<number, number> => {
@@ -138,6 +156,18 @@ const notStraight: FullHand = [
   { value: 1, suite: "Club" },
 ]
 
+
+const straight: FullHand = [
+  { value: 12, suite: "Heart" },
+  { value: 11, suite: "Heart" },
+  { value: 11, suite: "Heart" },
+  { value: 10, suite: "Spade" },
+  { value: 9, suite: "Club" },
+  { value: 13, suite: "Spade" },
+  { value: 1, suite: "Club" },
+]
+
+console.log(isStraight(sortCards(straight)))
 console.log(isStraight(sortCards(notStraight)))
 
 const result = compareHands(hand1, hand2, board);
