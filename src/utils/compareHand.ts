@@ -31,10 +31,10 @@ const countSame = <T>(list: T[], filter: ((a: T) => (b: T) => boolean)) => {
 
 const isFlush = (cards: FullHand): boolean => {
   const sortedSuites = cards.map(card => card.suite).sort((a, b) => suiteRank(b) - suiteRank(a));
-  return consecutiveFactory(4)(not(isNotEqual))(sortedSuites);
+  return consecutiveFactory(4)(4)(not(isNotEqual))(sortedSuites);
 }
 
-const consecutiveFactory = <T>(numConsecutive: number) => {
+const consecutiveFactory = (base: number) => <T>(numConsecutive: number) => {
   return (checker: ((a: T) => (b: T) => boolean)) => {
     return (values: T[]): boolean => {
       if (numConsecutive <= 0) {
@@ -46,17 +46,17 @@ const consecutiveFactory = <T>(numConsecutive: number) => {
       
       const [cur, next, ...rest] = values;
       if (checker(cur)(next)) {
-        return consecutiveFactory(numConsecutive - 1)(checker)([next, ...rest]);
+        return consecutiveFactory(base)(numConsecutive - 1)(checker)([next, ...rest]);
       }
   
-      return consecutiveFactory(numConsecutive)(checker)([next, ...rest])
+      return consecutiveFactory(base)(base)(checker)([next, ...rest])
     }
   }
 }
 
 const isStraight = (cards: FullHand): boolean => {
   const sortedValues = uniqueValues(cards.map(getValue));
-  return consecutiveFactory(4)(not(isDiffOne))(sortedValues);
+  return consecutiveFactory(4)(4)(isDiffOne)(sortedValues);
 };
 
 const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) => {
@@ -72,7 +72,7 @@ const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) 
 
 const isFourKind = (cards: FullHand): boolean => {
   const sortedValues = cards.map(card => card.value);
-  return consecutiveFactory(3)(not(isNotEqual))(sortedValues);
+  return consecutiveFactory(3)(3)(not(isNotEqual))(sortedValues);
 }
 
 const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteNum: number }> => {
@@ -177,8 +177,8 @@ const straight: FullHand = [
   { value: 1, suite: "Club" },
 ]
 
-// const result = compareHandsFactory(board)(hand1, hand2);
-// console.log("Winner:", result);
+const result = compareHandsFactory(board)(hand1, hand2);
+console.log("Winner:", result);
 
 
 
