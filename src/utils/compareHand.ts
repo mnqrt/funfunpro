@@ -1,4 +1,5 @@
 import { Card, Hand, Board, Suite, Value } from "../types/type";
+import { not, isDiffOne, isNotEqual } from "./comparator";
 
 type FullHand = Card[];
 
@@ -23,6 +24,10 @@ const compareCard = (a: Card, b: Card) => {
   return b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite)
 }
 
+const countSame = <T>(list: T[], filter: ((a: T) => (b: T) => boolean)) => {
+  return list.map(val => list.filter(filter(val)).length);
+}
+
 const isFlush = (cards: FullHand): boolean => {
   if (cards.length < 5) {
     return false
@@ -37,26 +42,29 @@ const isFlush = (cards: FullHand): boolean => {
   return isFlush(cards.slice(1))
 };
 
-const consecutiveFactory = (numConsecutive: number) => {
-  return (values: Value[]): boolean => {
-    if (numConsecutive <= 0) {
-      return true
+const consecutiveFactory = <T>(numConsecutive: number) => {
+  return (checker: ((a: T) => (b: T) => boolean)) => {
+    return (values: T[]): boolean => {
+      if (numConsecutive <= 0) {
+        return true
+      }
+      if (values.length < 2) {
+        return false
+      }
+      
+      const [cur, next, ...rest] = values;
+      if (checker(cur)(next)) {
+        return consecutiveFactory(numConsecutive - 1)(checker)([next, ...rest]);
+      }
+  
+      return consecutiveFactory(numConsecutive)(checker)([next, ...rest])
     }
-    if (values.length < 2) {
-      return false
-    }
-    
-    if (values[0] - 1 === values[1]) {
-      return consecutiveFactory(numConsecutive - 1)(values.slice(1))
-    }
-
-    return consecutiveFactory(4)(values.slice(1))
   }
 }
 
 const isStraight = (cards: FullHand): boolean => {
   const sortedValues = uniqueValues(cards.map(getValue));
-  return consecutiveFactory(4)(sortedValues);
+  return consecutiveFactory(4)(not(isDiffOne))(sortedValues);
 };
 
 const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) => {
@@ -68,6 +76,24 @@ const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) 
   count += 1
   suiteNum = Math.max(suiteNum, suiteRank(card.suite))
   return { count, suiteNum } 
+}
+
+const consecutive = <T>(
+  list: T[], 
+  checker: ((a: T) => (b: T) => boolean),
+  numConsecutive: number
+): boolean => {
+  if (numConsecutive <= 0) return true;
+  if (list.length < 2) return false;
+  
+  const [cur, next, ...rest] = list;
+  if (!checker(cur)(next)) return consecutive([next, ...rest], checker, numConsecutive);
+  return consecutive([next, ...rest], checker, numConsecutive - 1);
+}
+
+const isFourKind = (cards: FullHand): boolean => {
+  const sortedValues = cards.map(card => card.value);
+  return consecutive(sortedValues, not(isNotEqual), 3);
 }
 
 const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteNum: number }> => {
@@ -185,7 +211,6 @@ const notStraight: FullHand = [
   { value: 1, suite: "Club" },
 ]
 
-
 const straight: FullHand = [
   { value: 12, suite: "Heart" },
   { value: 11, suite: "Heart" },
@@ -196,11 +221,8 @@ const straight: FullHand = [
   { value: 1, suite: "Club" },
 ]
 
-console.log(isStraight(sortCards(straight)))
-console.log(isStraight(sortCards(notStraight)))
-
-const result = compareHandsFactory(board)(hand1, hand2);
-console.log("Winner:", result);
+// const result = compareHandsFactory(board)(hand1, hand2);
+// console.log("Winner:", result);
 
 
 
@@ -211,3 +233,25 @@ const card3: Card = {value: 12, suite: "Heart"}
 console.log(compareCard(card2, card1))
 
 console.log(compareCard(card1, card3))
+
+const fourKind: FullHand = [
+  { value: 12, suite: "Heart" },
+  { value: 9, suite: "Heart" },
+  { value: 1, suite: "Club" },
+  { value: 9, suite: "Diamond" },
+  { value: 9, suite: "Spade" },
+  { value: 13, suite: "Spade" },
+  { value: 9, suite: "Club" },
+]
+
+const sortedNotStraight = sortCards(notStraight);
+const sortedStraight = sortCards(straight);
+const sortedFourKind = sortCards(fourKind);
+
+console.log(isStraight(sortedNotStraight));
+console.log(isStraight(sortedStraight))
+console.log(isFourKind(sortedStraight));
+console.log(isFourKind(sortedFourKind));
+
+// const result = compareHands(hand1, hand2, board);
+// console.log("Winner:", result);
