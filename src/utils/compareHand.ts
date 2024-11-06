@@ -22,7 +22,7 @@ const suiteRank = (suite: Suite): number => {
 };
 
 const compareCard = (a: Card, b: Card) => {
-  return b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite)
+  return b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite);
 }
 
 const countSame = <T>(list: T[], filter: ((a: T) => (b: T) => boolean)) => {
@@ -30,18 +30,9 @@ const countSame = <T>(list: T[], filter: ((a: T) => (b: T) => boolean)) => {
 }
 
 const isFlush = (cards: FullHand): boolean => {
-  if (cards.length < 5) {
-    return false
-  }
-
-  const firstSuite = cards[0].suite;
-  const sameSuite = cards.filter(card => card.suite === firstSuite);
-  if (sameSuite.length >= 5) {
-    return true
-  }
-
-  return isFlush(cards.slice(1))
-};
+  const sortedSuites = cards.map(card => card.suite).sort((a, b) => suiteRank(b) - suiteRank(a));
+  return consecutiveFactory(4)(not(isNotEqual))(sortedSuites);
+}
 
 const consecutiveFactory = <T>(numConsecutive: number) => {
   return (checker: ((a: T) => (b: T) => boolean)) => {
@@ -79,22 +70,9 @@ const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) 
   return { count, suiteNum } 
 }
 
-const consecutive = <T>(
-  list: T[], 
-  checker: ((a: T) => (b: T) => boolean),
-  numConsecutive: number
-): boolean => {
-  if (numConsecutive <= 0) return true;
-  if (list.length < 2) return false;
-  
-  const [cur, next, ...rest] = list;
-  if (!checker(cur)(next)) return consecutive([next, ...rest], checker, numConsecutive);
-  return consecutive([next, ...rest], checker, numConsecutive - 1);
-}
-
 const isFourKind = (cards: FullHand): boolean => {
   const sortedValues = cards.map(card => card.value);
-  return consecutive(sortedValues, not(isNotEqual), 3);
+  return consecutiveFactory(3)(not(isNotEqual))(sortedValues);
 }
 
 const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteNum: number }> => {
