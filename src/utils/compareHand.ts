@@ -6,7 +6,7 @@ const getValue = (card: Card): Value => card.value
 const uniqueValues = <T>(arr: T[]): T[] => arr.filter((value, index, self) => self.indexOf(value) === index);
 
 const sortCards = (cards: FullHand): Card[] => {
-  return [...cards].sort((a, b) => b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite));
+  return [...cards].sort(compareCard);
 };
 
 const suiteRank = (suite: Suite): number => {
@@ -18,6 +18,10 @@ const suiteRank = (suite: Suite): number => {
   };
   return ranking[suite];
 };
+
+const compareCard = (a: Card, b: Card) => {
+  return b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite)
+}
 
 const isFlush = (cards: FullHand): boolean => {
   if (cards.length < 5) {
@@ -55,49 +59,76 @@ const isStraight = (cards: FullHand): boolean => {
   return consecutiveFactory(4)(sortedValues);
 };
 
-const getValueCounts = (cards: FullHand): Record<number, number> => {
-  const counts: Record<number, number> = {};
-  cards.forEach(card => {
-    counts[card.value] = (counts[card.value] || 0) + 1;
-  });
+const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) => {
+  if (!curValue) {
+    return { count: 0, suiteNum: suiteRank(card.suite) }
+  }
+
+  let { count, suiteNum } = curValue
+  count += 1
+  suiteNum = Math.max(suiteNum, suiteRank(card.suite))
+  return { count, suiteNum } 
+}
+
+const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteNum: number }> => {
+  const counts: Record<number, { count: number, suiteNum: number }> = {};
+  cards.forEach(card => counts[card.value] = updateValue(counts[card.value], card));
   return counts;
 };
 
-const rankHand = (cards: FullHand): { rank: number, highCards: Card[] } => {
+const rankHand = (cards: FullHand): { rank: number, highCard: Card } => {
   const sortedCards = sortCards(cards);
   const isFlushHand = isFlush(sortedCards);
   const isStraightHand = isStraight(sortedCards);
   const valueCounts = Object.entries(getValueCounts(sortedCards))
     .map(([value, count]) => ({ value: parseInt(value), count }))
-    .sort((a, b) => b.count - a.count || b.value - a.value);
+    .sort((a, b) => b.count.count - a.count.count || b.value - a.value || b.count.suiteNum - a.count.suiteNum);
 
   const counts = valueCounts.map(vc => vc.count);
-  const highestValues = valueCounts.map(vc => vc.value);
 
-  if (isFlushHand && isStraightHand && sortedCards[0].value === 13) {
-    return { rank: 10, highCards: sortedCards }; // Royal Flush
-  } else if (isFlushHand && isStraightHand) {
-    return { rank: 9, highCards: sortedCards }; // Straight Flush
-  } else if (counts[0] === 4) {
-    return { rank: 8, highCards: sortedCards.filter(card => card.value === highestValues[0]) }; // Four of a Kind
-  } else if (counts[0] === 3 && counts[1] === 2) {
-    return { rank: 7, highCards: sortedCards.filter(card => card.value === highestValues[0] || card.value === highestValues[1]) }; // Full House
-  } else if (isFlushHand) {
-    return { rank: 6, highCards: sortedCards }; // Flush
-  } else if (isStraightHand) {
-    return { rank: 5, highCards: sortedCards }; // Straight
-  } else if (counts[0] === 3) {
-    return { rank: 4, highCards: sortedCards.filter(card => card.value === highestValues[0]) }; // Three of a Kind
-  } else if (counts[0] === 2 && counts[1] === 2) {
-    return { rank: 3, highCards: sortedCards.filter(card => card.value === highestValues[0] || card.value === highestValues[1]) }; // Two Pair
-  } else if (counts[0] === 2) {
-    return { rank: 2, highCards: sortedCards.filter(card => card.value === highestValues[0]) }; // One Pair
-  } else {
-    return { rank: 1, highCards: sortedCards }; // High Card
+  const highCard = {suite: sortedCards[0].suite, value: sortedCards[0].value}
+
+  // Royal Flush
+  if (isFlushHand && isStraightHand && highCard.value === 13) {
+    return { rank: 10, highCard };
   }
+  // Straight Kind
+  if (isFlushHand && isStraightHand) {
+    return { rank: 9, highCard };
+  }
+  // Four of a Kind
+  if (counts[0].count === 4) {
+    return { rank: 8, highCard };
+  }
+  // Full House
+  if (counts[0].count === 3 && counts[1].count === 2) {
+    return { rank: 7, highCard };
+  }
+  // Flush
+  if (isFlushHand) {
+    return { rank: 6, highCard };
+  }
+  // Straight
+  if (isStraightHand) {
+    return { rank: 5, highCard };
+  }
+   // Three of a Kind
+  if (counts[0].count === 3) {
+    return { rank: 4, highCard };
+  }
+  // Two Pair
+  if (counts[0].count === 2 && counts[1].count === 2) {
+    return { rank: 3, highCard };
+  }
+  // One Pair
+  if (counts[0].count === 2) {
+    return { rank: 2, highCard };
+  }
+  // High Card
+  return { rank: 1, highCard };
 };
 
-const compareHands = (hand1: Hand, hand2: Hand, board: Board): "Hand1" | "Hand2" | "Tie" => {
+const compareHandsFactory = (board: Board) => (hand1: Hand, hand2: Hand): "Hand1" | "Hand2" | "Tie" => {
   const fullHand1: FullHand = [hand1.card1, hand1.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
   const fullHand2: FullHand = [hand2.card1, hand2.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
 
@@ -106,26 +137,24 @@ const compareHands = (hand1: Hand, hand2: Hand, board: Board): "Hand1" | "Hand2"
 
   if (rank1.rank > rank2.rank) {
     return "Hand1";
-  } else if (rank2.rank > rank1.rank) {
+  } 
+  
+  if (rank2.rank > rank1.rank) {
     return "Hand2";
-  } else {
-    for (let i = 0; i < rank1.highCards.length; i++) {
-      if (rank1.highCards[i].value > rank2.highCards[i].value) {
-        return "Hand1";
-      } else if (rank2.highCards[i].value > rank1.highCards[i].value) {
-        return "Hand2";
-      } else if (rank1.highCards[i].value === rank2.highCards[i].value) {
-        const rank1Suite = suiteRank(rank1.highCards[i].suite);
-        const rank2Suite = suiteRank(rank2.highCards[i].suite);
-        if (rank1Suite > rank2Suite) {
-          return "Hand1";
-        } else if (rank2Suite > rank1Suite) {
-          return "Hand2";
-        }
-      }
-    }
-    return "Tie";
+  } 
+
+  const compareCardValue = compareCard(rank1.highCard, rank2.highCard)
+  console.log(rank1.highCard)
+  console.log(rank2.highCard)
+  if (compareCardValue < 0) {
+    return "Hand1"
   }
+
+  if (compareCardValue > 0) {
+    return "Hand2"
+  }
+
+  return "Tie"
 };
 
 const hand1: Hand = {
@@ -170,5 +199,15 @@ const straight: FullHand = [
 console.log(isStraight(sortCards(straight)))
 console.log(isStraight(sortCards(notStraight)))
 
-const result = compareHands(hand1, hand2, board);
+const result = compareHandsFactory(board)(hand1, hand2);
 console.log("Winner:", result);
+
+
+
+const card1: Card = {value: 13, suite: "Spade"}
+const card2: Card = {value: 13, suite: "Diamond"}
+const card3: Card = {value: 12, suite: "Heart"}
+
+console.log(compareCard(card2, card1))
+
+console.log(compareCard(card1, card3))
