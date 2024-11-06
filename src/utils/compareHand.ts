@@ -1,4 +1,5 @@
 import { Card, Hand, Board, Suite, Value } from "../types/type";
+import { pipe, map, sort } from "./combine";
 
 type FullHand = Card[];
 
@@ -76,56 +77,35 @@ const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteN
   return counts;
 };
 
-const rankHand = (cards: FullHand): { rank: number, highCard: Card } => {
+const rankHand = (cards: Card[]) => {
   const sortedCards = sortCards(cards);
   const isFlushHand = isFlush(sortedCards);
   const isStraightHand = isStraight(sortedCards);
-  const valueCounts = Object.entries(getValueCounts(sortedCards))
-    .map(([value, count]) => ({ value: parseInt(value), count }))
-    .sort((a, b) => b.count.count - a.count.count || b.value - a.value || b.count.suiteNum - a.count.suiteNum);
+  const valueCounts = pipe(
+    getValueCounts,
+    Object.entries,
+    map(([value, count]) => ({ value: parseInt(value), count })),
+    sort((a, b) => b.count - a.count || b.value - a.value)
+  )(sortedCards);
 
-  const counts = valueCounts.map(vc => vc.count);
+  const highCard = ({ suite, value }) => ({ suite, value });
+  const highCardObj = highCard(sortedCards[0]);
 
-  const highCard = {suite: sortedCards[0].suite, value: sortedCards[0].value}
+  const rankConditions = [
+    { condition: () => isFlushHand && isStraightHand && highCardObj.value === 13, rank: 10 },
+    { condition: () => isFlushHand && isStraightHand, rank: 9 },
+    { condition: () => valueCounts[0].count === 4, rank: 8 },
+    { condition: () => valueCounts[0].count === 3 && valueCounts[1]?.count === 2, rank: 7 },
+    { condition: () => isFlushHand, rank: 6 },
+    { condition: () => isStraightHand, rank: 5 },
+    { condition: () => valueCounts[0].count === 3, rank: 4 },
+    { condition: () => valueCounts[0].count === 2 && valueCounts[1]?.count === 2, rank: 3 },
+    { condition: () => valueCounts[0].count === 2, rank: 2 },
+    { condition: () => true, rank: 1 },
+  ];
 
-  // Royal Flush
-  if (isFlushHand && isStraightHand && highCard.value === 13) {
-    return { rank: 10, highCard };
-  }
-  // Straight Kind
-  if (isFlushHand && isStraightHand) {
-    return { rank: 9, highCard };
-  }
-  // Four of a Kind
-  if (counts[0].count === 4) {
-    return { rank: 8, highCard };
-  }
-  // Full House
-  if (counts[0].count === 3 && counts[1].count === 2) {
-    return { rank: 7, highCard };
-  }
-  // Flush
-  if (isFlushHand) {
-    return { rank: 6, highCard };
-  }
-  // Straight
-  if (isStraightHand) {
-    return { rank: 5, highCard };
-  }
-   // Three of a Kind
-  if (counts[0].count === 3) {
-    return { rank: 4, highCard };
-  }
-  // Two Pair
-  if (counts[0].count === 2 && counts[1].count === 2) {
-    return { rank: 3, highCard };
-  }
-  // One Pair
-  if (counts[0].count === 2) {
-    return { rank: 2, highCard };
-  }
-  // High Card
-  return { rank: 1, highCard };
+  const rank = rankConditions.find(({ condition }) => condition()).rank;
+  return { rank, highCard: highCardObj };
 };
 
 const compareHandsFactory = (board: Board) => (hand1: Hand, hand2: Hand): "Hand1" | "Hand2" | "Tie" => {
@@ -144,8 +124,6 @@ const compareHandsFactory = (board: Board) => (hand1: Hand, hand2: Hand): "Hand1
   } 
 
   const compareCardValue = compareCard(rank1.highCard, rank2.highCard)
-  console.log(rank1.highCard)
-  console.log(rank2.highCard)
   if (compareCardValue < 0) {
     return "Hand1"
   }
