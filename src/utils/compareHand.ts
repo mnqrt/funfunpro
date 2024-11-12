@@ -1,4 +1,4 @@
-import { Card, Hand, Board, Suite, Value } from "../types/type";
+import { Card, Hand, Board, Suite, Value, ValueCount } from "../types/type";
 import { not, isDiffOne, isNotEqual } from "./comparator";
 import { pipe, map, sort } from "./combine";
 
@@ -89,7 +89,7 @@ const rankHand = (cards: Card[]) => {
     getValueCounts,
     Object.entries,
     map(([value, count]) => ({ value: parseInt(value), count })),
-    sort((a, b) => b.count - a.count || b.value - a.value)
+    sort((a: ValueCount, b: ValueCount) => b.count - a.count || b.value - a.value)
   )(sortedCards);
 
   const highCard = ({ suite, value }) => ({ suite, value });

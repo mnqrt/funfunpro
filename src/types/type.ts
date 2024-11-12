@@ -22,6 +22,11 @@ type Board = {
   card5: Card
 }
 
+type ValueCount = {
+  value: number,
+  count: number
+}
+
 export {
   values,
   Value,
@@ -29,5 +34,6 @@ export {
   Suite,
   Card,
   Hand,
-  Board
+  Board,
+  ValueCount
 }
