@@ -1,4 +1,4 @@
-import { FullHand } from "../types/type"
+import { FullHand, IntermediateRankHandResult, RankResult } from "../types/type"
 import { isDiffOne, isNotEqual, not } from "./comparator"
 import { getValue, suiteRank, uniqueValues } from "./convert"
 
@@ -39,8 +39,26 @@ const isNKind = (n: number) => (cards: FullHand): boolean => {
   return consecutiveWithBase(n - 1)(not(isNotEqual))(sortedValues);
 }
 
+const determineRank = ({ isFlushHand, isStraightHand, valueCounts, highCard }: IntermediateRankHandResult): RankResult => {
+  const rankConditions = [
+    { rank: 10, condition: () => isFlushHand && isStraightHand && highCard.value === 13 },
+    { rank: 9, condition: () => isFlushHand && isStraightHand },
+    { rank: 8, condition: () => valueCounts[0].count === 4 },
+    { rank: 7, condition: () => valueCounts[0].count === 3 && valueCounts[1]?.count === 2 },
+    { rank: 6, condition: () => isFlushHand },
+    { rank: 5, condition: () => isStraightHand },
+    { rank: 4, condition: () => valueCounts[0].count === 3 },
+    { rank: 3, condition: () => valueCounts[0].count === 2 && valueCounts[1]?.count === 2 },
+    { rank: 2, condition: () => valueCounts[0].count === 2 },
+    { rank: 1, condition: () => true }
+  ];
+
+  return { rank: rankConditions.find(({ condition }) => condition()).rank, highCard };
+};
+
 export {
   isFlush,
   isStraight,
-  isNKind
+  isNKind,
+  determineRank
 }

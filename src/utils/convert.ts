@@ -1,5 +1,7 @@
-import { values, suites, Card, Value, Suite, FullHand } from "../types/type" 
-import { compareCard } from "./comparator";
+import { values, suites, Card, Value, Suite, FullHand, IntermediateRankHandResult, ValueCount } from "../types/type" 
+import { isFlush, isStraight } from "./checker";
+import { pipe, map, sort } from "./combine";
+import { compareCard, compareValueCount } from "./comparator";
 
 const convertNumber = (value: Value): string => {
   if (value == 1) return "A";
@@ -71,6 +73,23 @@ const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteN
   return counts;
 };
 
+const getSortedValueCounts = (sortedCards: Card[]) =>
+  pipe(
+    getValueCounts,
+    Object.entries,
+    map(([value, count]) => ({ value: parseInt(value), count })),
+    sort(compareValueCount)
+  )(sortedCards) as ValueCount[];
+
+const processSortedCards = (sortedCards: Card[]): IntermediateRankHandResult => ({
+  sortedCards,
+  isFlushHand: isFlush(sortedCards),
+  isStraightHand: isStraight(sortedCards),
+  valueCounts: getSortedValueCounts(sortedCards),
+  highCard: sortedCards[0]
+});
+  
+
 export {
   convertNumber,
   generateDeck,
@@ -80,5 +99,6 @@ export {
   getValue,
   uniqueValues,
   sortCards,
-  getValueCounts
+  getValueCounts,
+  processSortedCards
 }

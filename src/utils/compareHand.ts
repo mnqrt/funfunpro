@@ -1,38 +1,15 @@
-import { Card, Hand, Board, FullHand, ValueCount } from "../types/type";
-import { pipe, map, sort } from "./combine";
-import { isFlush, isNKind, isStraight } from "./checker";
-import { getValueCounts, sortCards } from "./convert";
+import { Card, Hand, Board, FullHand, RankResult } from "../types/type";
+import { pipe } from "./combine";
+import { determineRank, isNKind, isStraight } from "./checker";
+import { processSortedCards, sortCards } from "./convert";
 import { compareCard } from "./comparator";
 
-const rankHand = (cards: Card[]) => {
-  const sortedCards = sortCards(cards);
-  const isFlushHand = isFlush(sortedCards);
-  const isStraightHand = isStraight(sortedCards);
-  const valueCounts = pipe(
-    getValueCounts,
-    Object.entries,
-    map(([value, count]) => ({ value: parseInt(value), count })),
-    sort((a: ValueCount, b: ValueCount) => b.count - a.count || b.value - a.value)
-  )(sortedCards) as ValueCount[];
+const rankHand = pipe<FullHand, RankResult>(
+  sortCards,
+  processSortedCards,
+  determineRank
+);
 
-  const highCardObj = sortedCards[0];
-
-  const rankConditions = [
-    { condition: () => isFlushHand && isStraightHand && highCardObj.value === 13, rank: 10 },
-    { condition: () => isFlushHand && isStraightHand, rank: 9 },
-    { condition: () => valueCounts[0].count === 4, rank: 8 },
-    { condition: () => valueCounts[0].count === 3 && valueCounts[1]?.count === 2, rank: 7 },
-    { condition: () => isFlushHand, rank: 6 },
-    { condition: () => isStraightHand, rank: 5 },
-    { condition: () => valueCounts[0].count === 3, rank: 4 },
-    { condition: () => valueCounts[0].count === 2 && valueCounts[1]?.count === 2, rank: 3 },
-    { condition: () => valueCounts[0].count === 2, rank: 2 },
-    { condition: () => true, rank: 1 },
-  ];
-
-  const rank = rankConditions.find(({ condition }) => condition()).rank;
-  return { rank, highCard: highCardObj };
-};
 
 const compareHandsFactory = (board: Board) => (hand1: Hand, hand2: Hand): "Hand1" | "Hand2" | "Tie" => {
   const fullHand1: FullHand = [hand1.card1, hand1.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
