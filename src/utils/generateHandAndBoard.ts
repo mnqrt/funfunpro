@@ -13,5 +13,18 @@ const generateHand = (playerCount: number) => (deck: Card[]): [Card[][], Card[]]
   return [hands, remainingDeck];
 };
 
+const generateBoard = (deck: Card[]): [Card[], Card[]] => {
+  const [card1, card2, card3, card4, card5, ...rest] = deck;
+  return [[card1, card2, card3, card4, card5], rest];
+}
+
 const deck = generateDeck();
-console.log(generateHand(5)(deck))
+const [hand, rest] = generateHand(5)(deck);
+const [board, unused] = generateBoard(deck)
+console.log(hand)
+console.log(board)
+
+export {
+  generateHand,
+  generateBoard
+}

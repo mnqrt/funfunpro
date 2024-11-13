@@ -79,8 +79,6 @@ const straight: FullHand = [
 const result = compareHandsFactory(board)(hand1, hand2);
 console.log("Winner:", result);
 
-
-
 const card1: Card = {value: 13, suite: "Spade"}
 const card2: Card = {value: 13, suite: "Diamond"}
 const card3: Card = {value: 12, suite: "Heart"}
@@ -110,3 +108,7 @@ console.log(isNKind(4)(sortedFourKind));
 
 // const result = compareHands(hand1, hand2, board);
 // console.log("Winner:", result);
+
+export {
+  compareHandsFactory
+}
