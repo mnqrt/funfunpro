@@ -2,8 +2,8 @@ import express from 'express';
 import { generateDeck, formatCard, unformatCard, getSum } from './utils/convert';
 import { shuffleDeck } from './utils/generateRandom';
 import { generateHand, generateBoard } from "./utils/generateHandAndBoard";
-import { compareHandsFactory } from './utils/compareHand';
-import { determineWinner, hit, isBust, stand } from './utils/checker';
+import { blackJackDetermineWinner, pokerDetermineWinner } from './utils/compareHand';
+import { hit, isBust, stand } from './utils/checker';
 
 const app = express();
 const port = 3000;
@@ -38,7 +38,7 @@ app.post('/generate/board', (req, res) => {
 app.post('/compare', (req, res) => {
   const body = JSON.parse(req.body);
   const { hand1, hand2, board } = body;
-  res.send(JSON.stringify({hand1: hand1, hand2: hand2, board: board, winner: compareHandsFactory(board)(hand1, hand2)}));
+  res.send(JSON.stringify({hand1: hand1, hand2: hand2, board: board, winner: pokerDetermineWinner(board)(hand1, hand2)}));
 });
 
 app.post('/hit', (req, res) => {
@@ -54,7 +54,8 @@ app.post('/hit', (req, res) => {
 app.post('/stand', (req, res) => {
   const { player, dealer, deck } = JSON.parse(req.body);
   const [dealerFinal, rest] = stand(dealer.map(unformatCard), deck.map(unformatCard));
-  const winner = determineWinner(player, dealerFinal);
+  const playerCards = (player as string[]).map(unformatCard)
+  const winner = blackJackDetermineWinner(playerCards, dealerFinal);
   res.send(JSON.stringify({player: player.map(formatCard), dealer: dealerFinal.map(formatCard), deck: rest.map(formatCard), result: winner}));
 });
 
