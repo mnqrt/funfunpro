@@ -1,6 +1,6 @@
-import { FullHand, IntermediateRankHandResult, RankResult } from "../types/type"
+import { Card, FullHand, IntermediateRankHandResult, RankResult } from "../types/type"
 import { isDiffOne, isNotEqual, not } from "./comparator"
-import { getValue, suiteRank, uniqueValues } from "./convert"
+import { getSum, getValue, suiteRank, uniqueValues } from "./convert"
 
 const consecutiveFactory = (base: number) => <T>(numConsecutive: number) => {
   return (checker: ((a: T) => (b: T) => boolean)) => {
@@ -56,9 +56,58 @@ const determineRank = ({ isFlushHand, isStraightHand, valueCounts, highCard }: I
   return { rank: rankConditions.find(({ condition }) => condition()).rank, highCard };
 };
 
+const hit = (hand: Card[], deck: Card[]): [Card[], Card[]] => {
+  const [first, ...rest] = deck;
+  const result = [...hand, first];
+  return [result, rest];
+}
+
+const hitUntil = (stop: number) => (hand: Card[], deck: Card[]): [Card[], Card[]] => {
+  const [result, rest] = hit(hand, deck);
+  if (getSum(result) < stop) {
+    return hitUntil(stop)(result, rest);
+  }
+  return [result, rest];
+}
+
+const stand = (dealer: Card[], deck: Card[]): [Card[], Card[]] => {
+  return hitUntil(17)(dealer, deck);
+}
+
+const isBust = (hand: Card[]): boolean => getSum(hand) > 21;
+
+const determineWinner = (player: Card[], dealer: Card[]): string => {
+  const playerPoint = getSum(player);
+  const dealerPoint = getSum(dealer);
+  const isPlayerBust = isBust(player);
+  const isDealerBust = isBust(dealer);
+  
+  if (isPlayerBust) {
+    return "Dealer Wins";
+  }
+
+  if (isDealerBust) {
+    return "Player Wins";
+  }
+
+  if (playerPoint > dealerPoint) {
+    return "Player Wins";
+  }
+
+  if (playerPoint < dealerPoint) {
+    return "Dealer Wins";
+  }
+
+  return "Tie";
+}
+
 export {
   isFlush,
   isStraight,
   isNKind,
-  determineRank
+  determineRank,
+  hit,
+  stand,
+  isBust,
+  determineWinner
 }

@@ -88,7 +88,8 @@ const processSortedCards = (sortedCards: Card[]): IntermediateRankHandResult => 
   valueCounts: getSortedValueCounts(sortedCards),
   highCard: sortedCards[0]
 });
-  
+
+const getSum = (hand: Card[]): number => hand.map(getValue).reduce((a, b) => a + b, 0);
 
 export {
   convertNumber,
@@ -100,5 +101,6 @@ export {
   uniqueValues,
   sortCards,
   getValueCounts,
-  processSortedCards
+  processSortedCards,
+  getSum
 }

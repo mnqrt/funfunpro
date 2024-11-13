@@ -19,7 +19,7 @@ const generateBoard = (deck: Card[]): [Card[], Card[]] => {
   return [[card1, card2, card3, card4, card5], rest];
 }
 
-const deck = generateDeck();
+const deck = shuffleDeck(generateDeck());
 const [hand, rest] = generateHand(5)(deck);
 const [board, _] = generateBoard(rest)
 console.log(hand)
