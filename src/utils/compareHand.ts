@@ -1,85 +1,8 @@
-import { Card, Hand, Board, Suite, Value, ValueCount } from "../types/type";
-import { not, isDiffOne, isNotEqual } from "./comparator";
+import { Card, Hand, Board, FullHand, ValueCount } from "../types/type";
 import { pipe, map, sort } from "./combine";
-
-type FullHand = Card[];
-
-const getValue = (card: Card): Value => card.value
-const uniqueValues = <T>(arr: T[]): T[] => arr.filter((value, index, self) => self.indexOf(value) === index);
-
-const sortCards = (cards: FullHand): Card[] => {
-  return [...cards].sort(compareCard);
-};
-
-const suiteRank = (suite: Suite): number => {
-  const ranking = {
-    "Spade": 4,
-    "Heart": 3,
-    "Diamond": 2,
-    "Club": 1,
-  };
-  return ranking[suite];
-};
-
-const compareCard = (a: Card, b: Card) => {
-  return b.value - a.value || suiteRank(b.suite) - suiteRank(a.suite);
-}
-
-const countSame = <T>(list: T[], filter: ((a: T) => (b: T) => boolean)) => {
-  return list.map(val => list.filter(filter(val)).length);
-}
-
-const isFlush = (cards: FullHand): boolean => {
-  const sortedSuites = cards.map(card => card.suite).sort((a, b) => suiteRank(b) - suiteRank(a));
-  return consecutiveFactory(4)(4)(not(isNotEqual))(sortedSuites);
-}
-
-const consecutiveFactory = (base: number) => <T>(numConsecutive: number) => {
-  return (checker: ((a: T) => (b: T) => boolean)) => {
-    return (values: T[]): boolean => {
-      if (numConsecutive <= 0) {
-        return true
-      }
-      if (values.length < 2) {
-        return false
-      }
-      
-      const [cur, next, ...rest] = values;
-      if (checker(cur)(next)) {
-        return consecutiveFactory(base)(numConsecutive - 1)(checker)([next, ...rest]);
-      }
-  
-      return consecutiveFactory(base)(base)(checker)([next, ...rest])
-    }
-  }
-}
-
-const isStraight = (cards: FullHand): boolean => {
-  const sortedValues = uniqueValues(cards.map(getValue));
-  return consecutiveFactory(4)(4)(isDiffOne)(sortedValues);
-};
-
-const updateValue = (curValue: { count: number, suiteNum: number }, card: Card) => {
-  if (!curValue) {
-    return { count: 0, suiteNum: suiteRank(card.suite) }
-  }
-
-  let { count, suiteNum } = curValue
-  count += 1
-  suiteNum = Math.max(suiteNum, suiteRank(card.suite))
-  return { count, suiteNum } 
-}
-
-const isFourKind = (cards: FullHand): boolean => {
-  const sortedValues = cards.map(card => card.value);
-  return consecutiveFactory(3)(3)(not(isNotEqual))(sortedValues);
-}
-
-const getValueCounts = (cards: FullHand): Record<number, { count: number, suiteNum: number }> => {
-  const counts: Record<number, { count: number, suiteNum: number }> = {};
-  cards.forEach(card => counts[card.value] = updateValue(counts[card.value], card));
-  return counts;
-};
+import { isFlush, isNKind, isStraight } from "./checker";
+import { getValueCounts, sortCards } from "./convert";
+import { compareCard } from "./comparator";
 
 const rankHand = (cards: Card[]) => {
   const sortedCards = sortCards(cards);
@@ -90,10 +13,9 @@ const rankHand = (cards: Card[]) => {
     Object.entries,
     map(([value, count]) => ({ value: parseInt(value), count })),
     sort((a: ValueCount, b: ValueCount) => b.count - a.count || b.value - a.value)
-  )(sortedCards);
+  )(sortedCards) as ValueCount[];
 
-  const highCard = ({ suite, value }) => ({ suite, value });
-  const highCardObj = highCard(sortedCards[0]);
+  const highCardObj = sortedCards[0];
 
   const rankConditions = [
     { condition: () => isFlushHand && isStraightHand && highCardObj.value === 13, rank: 10 },
@@ -206,8 +128,8 @@ const sortedFourKind = sortCards(fourKind);
 
 console.log(isStraight(sortedNotStraight));
 console.log(isStraight(sortedStraight))
-console.log(isFourKind(sortedStraight));
-console.log(isFourKind(sortedFourKind));
+console.log(isNKind(4)(sortedStraight));
+console.log(isNKind(4)(sortedFourKind));
 
 // const result = compareHands(hand1, hand2, board);
 // console.log("Winner:", result);

@@ -1,5 +1,5 @@
 import { Card } from "../types/type";
-import { generateDeck } from "./convertNumber";
+import { generateDeck } from "./convert";
 
 const generateHand = (playerCount: number) => (deck: Card[]): [Card[][], Card[]] => {
   const hands = Array.from({ length: playerCount }, (_, player) => 

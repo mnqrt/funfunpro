@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateDeck, formatCard, unformatCard } from './utils/convertNumber';
+import { generateDeck, formatCard, unformatCard } from './utils/convert';
 import { shuffleDeck } from './utils/generateRandom';
 const app = express();
 const port = 3000;

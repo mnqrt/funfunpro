@@ -1,5 +1,5 @@
 import { Card } from "../types/type";
-import { generateDeck, formatCard } from "./convertNumber";
+import { generateDeck, formatCard } from "./convert";
 import { isNotEqual } from "./comparator";
 import { getCurrentTime, getTommorow } from "./getTime";
 

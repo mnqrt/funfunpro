@@ -27,6 +27,21 @@ type ValueCount = {
   count: number
 }
 
+type RankResult = { 
+  rank: number, 
+  highCard: Card 
+};
+
+type IntermediateRankHandResult = {
+  sortedCards: Card[];
+  isFlushHand: boolean;
+  isStraightHand: boolean;
+  valueCounts: { value: number; count: number }[];
+  highCard: { suite: Suite, value: Value };
+};
+
+type FullHand = Card[];
+
 export {
   values,
   Value,
@@ -35,5 +50,8 @@ export {
   Card,
   Hand,
   Board,
-  ValueCount
+  ValueCount,
+  RankResult,
+  IntermediateRankHandResult,
+  FullHand
 }
