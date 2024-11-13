@@ -1,5 +1,6 @@
 import { Card } from "../types/type";
 import { generateDeck } from "./convert";
+import { shuffleDeck } from "./generateRandom";
 
 const generateHand = (playerCount: number) => (deck: Card[]): [Card[][], Card[]] => {
   const hands = Array.from({ length: playerCount }, (_, player) => 
@@ -20,7 +21,7 @@ const generateBoard = (deck: Card[]): [Card[], Card[]] => {
 
 const deck = generateDeck();
 const [hand, rest] = generateHand(5)(deck);
-const [board, unused] = generateBoard(deck)
+const [board, _] = generateBoard(rest)
 console.log(hand)
 console.log(board)
 
