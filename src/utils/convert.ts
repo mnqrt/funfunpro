@@ -1,4 +1,4 @@
-import { values, suites, Card, Value, Suite, FullHand, IntermediateRankHandResult, ValueCount } from "../types/type" 
+import { values, suites, Card, Value, Suite, FullHand, IntermediateRankHandResult, ValueCount, Hand, Board } from "../types/type" 
 import { isFlush, isStraight } from "./checker";
 import { pipe, map, sort } from "./combine";
 import { compareCard, compareValueCount } from "./comparator";
@@ -91,6 +91,16 @@ const processSortedCards = (sortedCards: Card[]): IntermediateRankHandResult => 
 
 const getSum = (hand: Card[]): number => hand.map(getValue).reduce((a, b) => a + b, 0);
 
+const handFromArray = (array: [Card, Card]): Hand => {
+  const [ card1, card2 ] = array;
+  return { card1, card2 };
+}
+
+const boardFromArray = (array: [Card, Card, Card, Card, Card]): Board => {
+  const [ card1, card2, card3, card4, card5 ] = array;
+  return { card1, card2, card3, card4, card5 };
+}
+
 export {
   convertNumber,
   generateDeck,
@@ -102,5 +112,7 @@ export {
   sortCards,
   getValueCounts,
   processSortedCards,
-  getSum
+  getSum,
+  handFromArray,
+  boardFromArray
 }
