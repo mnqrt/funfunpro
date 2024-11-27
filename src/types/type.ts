@@ -53,5 +53,5 @@ export {
   ValueCount,
   RankResult,
   IntermediateRankHandResult,
-  FullHand
+  FullHand,
 }

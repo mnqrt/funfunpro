@@ -76,30 +76,7 @@ const stand = (dealer: Card[], deck: Card[]): [Card[], Card[]] => {
 
 const isBust = (hand: Card[]): boolean => getSum(hand) > 21;
 
-const determineWinner = (player: Card[], dealer: Card[]): string => {
-  const playerPoint = getSum(player);
-  const dealerPoint = getSum(dealer);
-  const isPlayerBust = isBust(player);
-  const isDealerBust = isBust(dealer);
-  
-  if (isPlayerBust) {
-    return "Dealer Wins";
-  }
-
-  if (isDealerBust) {
-    return "Player Wins";
-  }
-
-  if (playerPoint > dealerPoint) {
-    return "Player Wins";
-  }
-
-  if (playerPoint < dealerPoint) {
-    return "Dealer Wins";
-  }
-
-  return "Tie";
-}
+const compareBlackJackCard = (a: number, b: number) => a - b;
 
 export {
   isFlush,
@@ -109,5 +86,5 @@ export {
   hit,
   stand,
   isBust,
-  determineWinner
+  compareBlackJackCard
 }

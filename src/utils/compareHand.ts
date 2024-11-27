@@ -1,51 +1,84 @@
-import { Card, Hand, Board, FullHand, RankResult } from "../types/type";
+import { Card, Hand, Board, FullHand } from "../types/type";
 import { pipe } from "./combine";
-import { determineRank, isNKind, isStraight } from "./checker";
-import { processSortedCards, sortCards } from "./convert";
+import { compareBlackJackCard, determineRank, isNKind, isStraight } from "./checker";
+import { getSum, processSortedCards, sortCards } from "./convert";
 import { compareCard } from "./comparator";
 
-const rankHand = pipe<FullHand, RankResult>(
+type RankResult = { rank: number; highCard?: Card };
+type Comparator = (a: Card | number, b: Card | number) => number;
+type Ranker = (hand: Card[]) => RankResult | number;
+type OptionalBustChecker = (hand: Card[]) => boolean | undefined;
+
+const determineWinnerFactory = (
+  ranker: Ranker,
+  comparator: Comparator,
+  isBust?: OptionalBustChecker 
+) => (hand1: Card[], hand2: Card[]): string => {
+  if (isBust) {
+    const isHand1Bust = isBust(hand1);
+    const isHand2Bust = isBust(hand2);
+
+    if (isHand1Bust) {
+      return "Hand2 Wins";
+    }
+
+    if (isHand2Bust) {
+      return "Hand1 Wins";
+    }
+  }
+
+  const rank1 = ranker(hand1);
+  const rank2 = ranker(hand2);
+
+  
+  if (typeof rank1 === "number" && typeof rank2 === "number") {
+    if (rank1 > rank2) return "Hand1 Wins";
+    if (rank1 < rank2) return "Hand2 Wins";
+  }
+
+  
+  if (typeof rank1 === "object" && typeof rank2 === "object") {
+    if (rank1.rank > rank2.rank) return "Hand1 Wins";
+    if (rank1.rank < rank2.rank) return "Hand2 Wins";
+
+    
+    if (rank1.highCard !== undefined && rank2.highCard !== undefined) {
+      const tieBreaker = comparator(rank1.highCard, rank2.highCard);
+      if (tieBreaker < 0) return "Hand2 Wins";
+      if (tieBreaker > 0) return "Hand1 Wins";
+    }
+  }
+
+  return "Tie";
+};
+
+const rankHandPoker = pipe<FullHand, RankResult>(
   sortCards,
   processSortedCards,
   determineRank
 );
 
-const compareHandsFactory = (board: Board) => (hand1: Hand, hand2: Hand): "Hand1" | "Hand2" | "Tie" => {
-  const fullHand1: FullHand = [hand1.card1, hand1.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
-  const fullHand2: FullHand = [hand2.card1, hand2.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
+const pokerDetermineWinner = (board: Board) => (hand1: Card[], hand2: Card[]): string => {
+  const fullHand1: Card[] = [...hand1, board.card1, board.card2, board.card3, board.card4, board.card5];
+  const fullHand2: Card[] = [...hand2, board.card1, board.card2, board.card3, board.card4, board.card5];
 
-  const rank1 = rankHand(fullHand1);
-  const rank2 = rankHand(fullHand2);
-
-  if (rank1.rank > rank2.rank) {
-    return "Hand1";
-  } 
-  
-  if (rank2.rank > rank1.rank) {
-    return "Hand2";
-  } 
-
-  const compareCardValue = compareCard(rank1.highCard, rank2.highCard)
-  if (compareCardValue < 0) {
-    return "Hand1"
-  }
-
-  if (compareCardValue > 0) {
-    return "Hand2"
-  }
-
-  return "Tie"
+  return determineWinnerFactory(rankHandPoker, compareCard)(fullHand1, fullHand2);
 };
 
-const hand1: Hand = {
-  card1: { value: 10, suite: "Heart" },
-  card2: { value: 11, suite: "Heart" }
-};
+const blackJackDetermineWinner = determineWinnerFactory(
+  getSum,
+  compareBlackJackCard
+)
 
-const hand2: Hand = {
-  card1: { value: 10, suite: "Spade" },
-  card2: { value: 11, suite: "Spade" }
-};
+const hand1: Card[] = [
+  { value: 10, suite: "Heart" },
+  { value: 11, suite: "Heart" }
+];
+
+const hand2: Card[] = [
+  { value: 10, suite: "Spade" },
+  { value: 11, suite: "Spade" }
+];
 
 const board: Board = {
   card1: { value: 9, suite: "Heart" },
@@ -75,7 +108,7 @@ const straight: FullHand = [
   { value: 1, suite: "Club" },
 ]
 
-const result = compareHandsFactory(board)(hand1, hand2);
+const result = pokerDetermineWinner(board)(hand1, hand2);
 console.log("Winner:", result);
 
 const card1: Card = {value: 13, suite: "Spade"}
@@ -109,5 +142,6 @@ console.log(isNKind(4)(sortedFourKind));
 // console.log("Winner:", result);
 
 export {
-  compareHandsFactory
+  pokerDetermineWinner,
+  blackJackDetermineWinner
 }
