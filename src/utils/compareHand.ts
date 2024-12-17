@@ -3,6 +3,7 @@ import { pipe } from "./combine";
 import { compareBlackJackCard, determineRank, isNKind, isStraight } from "./checker";
 import { getSum, processSortedCards, sortCards } from "./convert";
 import { compareCard } from "./comparator";
+import { handFromArray } from "./convert";
 
 type RankResult = { rank: number; highCard?: Card };
 type Comparator = (a: Card | number, b: Card | number) => number;
@@ -58,9 +59,9 @@ const rankHandPoker = pipe<FullHand, RankResult>(
   determineRank
 );
 
-const pokerDetermineWinner = (board: Board) => (hand1: Card[], hand2: Card[]): string => {
-  const fullHand1: Card[] = [...hand1, board.card1, board.card2, board.card3, board.card4, board.card5];
-  const fullHand2: Card[] = [...hand2, board.card1, board.card2, board.card3, board.card4, board.card5];
+const pokerDetermineWinner = (board: Board) => (hand1: Hand, hand2: Hand): string => {
+  const fullHand1: Card[] = [hand1.card1, hand2.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
+  const fullHand2: Card[] = [hand2.card1, hand2.card2, board.card1, board.card2, board.card3, board.card4, board.card5];
 
   return determineWinnerFactory(rankHandPoker, compareCard)(fullHand1, fullHand2);
 };
@@ -70,12 +71,12 @@ const blackJackDetermineWinner = determineWinnerFactory(
   compareBlackJackCard
 )
 
-const hand1: Card[] = [
+const hand1: [Card, Card] = [
   { value: 10, suite: "Heart" },
   { value: 11, suite: "Heart" }
 ];
 
-const hand2: Card[] = [
+const hand2: [Card, Card] = [
   { value: 10, suite: "Spade" },
   { value: 11, suite: "Spade" }
 ];
@@ -108,7 +109,7 @@ const straight: FullHand = [
   { value: 1, suite: "Club" },
 ]
 
-const result = pokerDetermineWinner(board)(hand1, hand2);
+const result = pokerDetermineWinner(board)(handFromArray(hand1), handFromArray(hand2));
 console.log("Winner:", result);
 
 const card1: Card = {value: 13, suite: "Spade"}
